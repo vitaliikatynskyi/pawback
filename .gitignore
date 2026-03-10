@@ -1,0 +1,15 @@
+.npm-cache/
+.playwright-mcp/
+.DS_Store
+frontend/dist/
+frontend/node_modules/
+backend/build/
+backend/.gradle/
+aboutme.md
+ 
+ 
+ 
+ 
+ 
+ 
+aboutme.md
