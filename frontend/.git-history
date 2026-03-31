@@ -4,3 +4,4 @@
 2026-03-20 09:15:00 - feat: implement Authentication UI pages
 2026-03-24 16:45:00 - feat: implement user state management with Zustand
 2026-03-27 10:10:00 - feat: create multi-step pet listing form
+2026-03-31 13:25:00 - feat: add photo upload component with preview
