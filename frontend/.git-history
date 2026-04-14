@@ -8,3 +8,4 @@
 2026-04-03 15:50:00 - feat: implement main pet listings feed
 2026-04-07 11:05:00 - feat: integrate Leaflet for interactive map view
 2026-04-10 14:30:00 - feat: implement interactive location picker
+2026-04-14 09:20:00 - feat: design chat interface (Messages.tsx)
