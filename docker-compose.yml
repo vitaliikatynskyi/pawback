@@ -83,11 +83,9 @@ volumes:
  
  
  
-/**
- * Task: chore: optimize docker resource limits and network configuration
- * Implemented during Pull Request #16
- * Timestamp: 2026-03-25T22:00:00
- */
+# Task: chore: optimize docker resource limits and network configuration
+# Implemented during Pull Request #16
+# Timestamp: 2026-03-25T22:00:00
  
  
  
