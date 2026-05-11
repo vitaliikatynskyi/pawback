@@ -12,7 +12,6 @@ import {
   Settings,
   Phone,
   Mail,
-  Archive,
 } from 'lucide-react';
 import { usersApi, listingsApi } from '../api/client';
 import type { User, Listing } from '../types';

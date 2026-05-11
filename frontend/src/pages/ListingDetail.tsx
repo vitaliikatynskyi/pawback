@@ -179,7 +179,7 @@ export default function ListingDetail() {
 
   const copyContact = async () => {
     if (!listing) return;
-    const contact = listing.author.username ? `@${listing.author.username}` : listing.author.displayName || 'Контакт приховано';
+    const contact = listing.author.phoneNumber || listing.author.username || listing.author.displayName || 'Контакт приховано';
     try {
       await navigator.clipboard.writeText(contact);
       setNotice('Контакт скопійовано');
