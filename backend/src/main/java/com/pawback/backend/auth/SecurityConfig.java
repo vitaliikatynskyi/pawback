@@ -48,11 +48,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // /api/listings/my requires auth — must be declared before the wildcard
+                .requestMatchers(HttpMethod.GET, "/api/listings/my").authenticated()
                 .requestMatchers(HttpMethod.GET,
                         "/api/listings",
                         "/api/listings/*",
                         "/api/listings/*/comments",
-                        "/api/users/*"
+                        "/api/users/*",
+                        "/api/files/download/*"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
@@ -69,15 +72,6 @@ public class SecurityConfig {
 
 
  
- 
- 
- 
- 
-/**
- * Task: docs: add extensive javadoc for security filter chain and cors configuration
- * Implemented during Pull Request #2
- * Timestamp: 2026-03-04T22:00:00
- */
  
  
  

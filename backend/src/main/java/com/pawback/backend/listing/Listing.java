@@ -85,7 +85,8 @@ public class Listing {
     @ElementCollection
     @CollectionTable(name = "listing_images", joinColumns = @JoinColumn(name = "listing_id"))
     @Column(name = "image_url")
-    private List<String> imageUrls;
+    @Builder.Default
+    private List<String> imageUrls = new java.util.ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
@@ -100,8 +101,3 @@ public class Listing {
         updatedAt = LocalDateTime.now();
     }
 }
-/**
- * Task: refactor: add validation constraints to pet listing entity
- * Implemented during Pull Request #23
- * Timestamp: 2026-04-05T11:00:00
- */

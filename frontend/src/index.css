@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #E8704A;
+  --color-primary-hover: #D55F38;
+  --color-bg-cream: #FAF6F0;
+  --color-bg-sidebar: #F5EFE7;
+  --color-text-dark: #2B2420;
+  --color-text-muted: #8B7E72;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg-cream text-text-dark;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100dvh;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Outfit', 'Georgia', serif;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.sidebar-item {
+  @apply flex items-center gap-3 px-4 py-3 rounded-xl text-text-muted transition-all hover:bg-white hover:text-text-dark;
+}
+
+.sidebar-item.active {
+  @apply bg-white text-text-dark shadow-sm;
+}
+
+.btn-primary {
+  @apply bg-primary hover:bg-primary-hover text-white font-medium py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2;
+}
+
+.card {
+  @apply bg-white rounded-3xl p-6 border border-gray-100 shadow-sm;
+}
+
+/* Chat toast notifications */
+.chat-toast-container {
+  position: fixed;
+  bottom: 5rem;
+  right: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.625rem;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .chat-toast-container {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+}
+
+.chat-toast {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  border: 1px solid #f0ece7;
+  border-left: 4px solid #E8704A;
+  border-radius: 1rem;
+  padding: 0.875rem 1rem;
+  min-width: 280px;
+  max-width: 340px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer;
+  animation: toast-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.chat-toast:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.14);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.chat-toast-icon {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: #fef3ee;
+  color: #E8704A;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-toast-name {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: #2B2420;
+  margin-bottom: 0.125rem;
+}
+
+.chat-toast-text {
+  font-size: 0.75rem;
+  color: #8B7E72;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-toast-close {
+  flex-shrink: 0;
+  color: #c0b4a8;
+  padding: 0.25rem;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+}
+
+.chat-toast-close:hover {
+  color: #8B7E72;
+  background: #f5efe7;
+}

@@ -242,12 +242,3 @@ export default function Feed() {
  
  
  
- 
-/**
- * Task: refactor: implement virtualization for listing feed
- * Implemented during Pull Request #27
- * Timestamp: 2026-04-11T11:00:00
- */
- 
- 
- 

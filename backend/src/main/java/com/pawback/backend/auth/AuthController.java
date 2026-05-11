@@ -60,12 +60,3 @@ record AuthResponse(String token) {}
  
  
  
- 
-/**
- * Task: refactor: implement comprehensive authentication logging and error handling
- * Implemented during Pull Request #1
- * Timestamp: 2026-03-03T10:00:00
- */
- 
- 
- 

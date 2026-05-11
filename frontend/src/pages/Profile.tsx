@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   MapPin,
@@ -22,39 +22,60 @@ function ListingCard({
   listing,
   badgeLabel,
   badgeClassName,
+  isOwner = false,
 }: {
   listing: Listing;
   badgeLabel: string;
   badgeClassName: string;
+  isOwner?: boolean;
 }) {
+  const navigate = useNavigate();
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/edit/${listing.id}`);
+  };
+
   return (
-    <Link
-      to={`/listing/${listing.id}`}
-      className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
-    >
-      <div className="aspect-[4/3] bg-orange-50 overflow-hidden">
-        <img
-          src={PET_TYPE_IMAGES[listing.petType] || PET_TYPE_IMAGES.OTHER}
-          alt={listing.petName || 'Тваринка'}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-      </div>
-      <div className="p-4 space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase text-white ${listing.type === 'LOST' ? 'bg-red-500' : 'bg-green-500'}`}>
-            {LISTING_TYPE_LABELS[listing.type]}
-          </span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClassName}`}>
-            {badgeLabel}
-          </span>
+    <div className="relative group">
+      <Link
+        to={`/listing/${listing.id}`}
+        className="block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+      >
+        <div className="aspect-[4/3] bg-orange-50 overflow-hidden relative">
+          <img
+            src={(listing.imageUrls && listing.imageUrls.length > 0) ? listing.imageUrls[0] : (PET_TYPE_IMAGES[listing.petType] || PET_TYPE_IMAGES.OTHER)}
+            alt={listing.petName || 'Тваринка'}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          {isOwner && (
+            <button
+              onClick={handleEditClick}
+              className="absolute top-3 right-3 p-2.5 bg-white/90 backdrop-blur-md rounded-xl text-primary shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-white z-10"
+              title="Редагувати"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+          )}
         </div>
-        <h3 className="font-bold text-text-dark">{listing.petName || 'Без імені'}</h3>
-        <p className="text-text-muted text-sm">{listing.addressText || listing.city || 'Локація не вказана'}</p>
-        <p className="text-[11px] text-text-muted font-medium">
-          {PET_TYPE_LABELS[listing.petType]} · {formatUkrDate(listing.createdAt, { day: 'numeric', month: 'short' })}
-        </p>
-      </div>
-    </Link>
+        <div className="p-4 space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase text-white ${listing.type === 'LOST' ? 'bg-red-500' : 'bg-green-500'}`}>
+              {LISTING_TYPE_LABELS[listing.type]}
+            </span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${badgeClassName}`}>
+              {badgeLabel}
+            </span>
+          </div>
+          <h3 className="font-bold text-text-dark">{listing.petName || 'Без імені'}</h3>
+          <p className="text-text-muted text-sm">{listing.addressText || listing.city || 'Локація не вказана'}</p>
+          <p className="text-[11px] text-text-muted font-medium">
+            {PET_TYPE_LABELS[listing.petType]} · {formatUkrDate(listing.createdAt, { day: 'numeric', month: 'short' })}
+          </p>
+        </div>
+      </Link>
+    </div>
   );
 }
 
@@ -75,7 +96,7 @@ export default function Profile() {
       try {
         const [userRes, listingsRes] = await Promise.all([
           usersApi.getMe(),
-          listingsApi.getAll(),
+          listingsApi.getMyListings(),
         ]);
 
         setUser(userRes.data);
@@ -115,7 +136,7 @@ export default function Profile() {
     }
   };
 
-  const myListings = listings.filter(listing => listing.author?.id === user?.id);
+  const myListings = listings;
   const savedListings = listings.filter(listing => savedListingIds.includes(listing.id));
   const helpedListings = listings.filter(listing => helpedListingIds.includes(listing.id));
   const avatarLetter = user?.displayName?.[0]?.toUpperCase() || '?';
@@ -330,6 +351,7 @@ export default function Profile() {
               <ListingCard
                 key={listing.id}
                 listing={listing}
+                isOwner={true}
                 badgeLabel={listing.status === 'ACTIVE' ? 'Активне' : listing.status === 'RESOLVED' ? 'Знайдено!' : listing.status}
                 badgeClassName={listing.status === 'ACTIVE' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}
               />
@@ -378,22 +400,6 @@ export default function Profile() {
 
 
 
- 
- 
- 
- 
- 
- 
-/**
- * Task: style: update profile layout and contact information display
- * Implemented during Pull Request #13
- * Timestamp: 2026-03-21T10:00:00
- */
-/**
- * Task: fix: resolve avatar upload issue and state synchronization
- * Implemented during Pull Request #33
- * Timestamp: 2026-04-20T11:00:00
- */
  
  
  

@@ -460,19 +460,3 @@ export default function Search() {
  
  
  
- 
- 
-/**
- * Task: feat: implement complex search filters with real-time feedback
- * Implemented during Pull Request #9
- * Timestamp: 2026-03-15T10:00:00
- */
-/**
- * Task: feat: add saved searches and email alert functionality
- * Implemented during Pull Request #39
- * Timestamp: 2026-04-29T11:00:00
- */
- 
- 
- 
- 

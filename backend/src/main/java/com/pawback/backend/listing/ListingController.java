@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -38,9 +39,27 @@ public class ListingController {
         return ResponseEntity.ok(listingService.create(request));
     }
 
+    @GetMapping("/my")
+    public List<ListingDto> getMyListings() {
+        return listingService.findByCurrentUser();
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ListingDto> updateListing(@PathVariable UUID id, @Valid @RequestBody CreateListingRequest request) {
         return ResponseEntity.ok(listingService.update(id, request));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ListingDto> updateStatus(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        String status = body.get("status");
+        if (status == null || status.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        Set<String> allowed = Set.of("ACTIVE", "RESOLVED", "EXPIRED", "ARCHIVED");
+        if (!allowed.contains(status.toUpperCase())) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(listingService.updateStatus(id, status));
     }
 
     @GetMapping("/{id}/comments")
@@ -60,8 +79,6 @@ public class ListingController {
         return ResponseEntity.ok(listingService.addComment(id, content));
     }
 }
- 
- 
  
  
  

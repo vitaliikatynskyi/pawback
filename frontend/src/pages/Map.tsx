@@ -265,14 +265,3 @@ export default function MapPage() {
  
  
  
- 
- 
-/**
- * Task: refactor: improve map marker clustering and performance
- * Implemented during Pull Request #10
- * Timestamp: 2026-03-16T22:00:00
- */
- 
- 
- 
- 

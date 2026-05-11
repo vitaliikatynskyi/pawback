@@ -240,8 +240,3 @@ export default function Login() {
 
 
 
-/**
- * Task: feat: add form validation and error feedback for login page
- * Implemented during Pull Request #8
- * Timestamp: 2026-03-13T22:00:00
- */

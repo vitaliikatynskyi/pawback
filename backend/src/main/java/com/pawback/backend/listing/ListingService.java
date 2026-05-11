@@ -10,6 +10,8 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.access.AccessDeniedException;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -110,8 +112,9 @@ public class ListingService {
         listing.setRewardAmount(req.rewardAmount());
         listing.setRewardCurrency(req.rewardCurrency() != null ? req.rewardCurrency() : "UAH");
         
-        if (req.imageUrls() != null && !req.imageUrls().isEmpty()) {
-            listing.setImageUrls(req.imageUrls());
+        if (req.imageUrls() != null) {
+            listing.getImageUrls().clear();
+            listing.getImageUrls().addAll(req.imageUrls());
         }
 
         if (req.latitude() != null && req.longitude() != null) {
@@ -119,6 +122,25 @@ public class ListingService {
             listing.setLocation(point);
         }
 
+        return ListingDto.from(listingRepository.save(listing));
+    }
+
+    public List<ListingDto> findByCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return listingRepository.findByAuthorEmailOrderByCreatedAtDesc(email).stream()
+                .map(ListingDto::from)
+                .toList();
+    }
+
+    @Transactional
+    public ListingDto updateStatus(UUID id, String status) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        var listing = listingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Listing not found"));
+        if (!listing.getAuthor().getEmail().equals(email)) {
+            throw new AccessDeniedException("You are not the author of this listing");
+        }
+        listing.setStatus(status.toUpperCase());
         return ListingDto.from(listingRepository.save(listing));
     }
 
@@ -164,17 +186,6 @@ public class ListingService {
 
 
 
- 
- 
- 
- 
- 
- 
-/**
- * Task: refactor: optimize listing retrieval with detailed logging and exception handling
- * Implemented during Pull Request #4
- * Timestamp: 2026-03-07T22:00:00
- */
  
  
  

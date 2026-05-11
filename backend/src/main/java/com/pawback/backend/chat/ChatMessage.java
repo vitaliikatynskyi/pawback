@@ -40,8 +40,3 @@ public class ChatMessage {
         timestamp = LocalDateTime.now();
     }
 }
-/**
- * Task: refactor: update chat message entity with status field
- * Implemented during Pull Request #20
- * Timestamp: 2026-03-31T23:00:00
- */

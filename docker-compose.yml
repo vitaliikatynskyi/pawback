@@ -5,15 +5,15 @@ services:
     restart: always
     environment:
       POSTGRES_DB: pawback
-      POSTGRES_USER: pawback_user
-      POSTGRES_PASSWORD: pawback_password
+      POSTGRES_USER: ${DB_USER:-pawback_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pawback_password}
       TZ: Europe/Kyiv
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pawback_user -d pawback"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pawback_user} -d pawback"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,8 +32,8 @@ services:
     container_name: pawback-minio
     restart: always
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -62,7 +62,13 @@ services:
       - "8080:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/pawback
+      - DB_USER=${DB_USER:-pawback_user}
+      - DB_PASSWORD=${DB_PASSWORD:-pawback_password}
+      - JWT_SECRET=${JWT_SECRET:-pawback_secret_key_that_is_at_least_256_bits_long_change_in_prod}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-86400000}
       - MINIO_URL=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=10MB
       - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=10MB
       - TZ=Europe/Kyiv
@@ -74,18 +80,3 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
-
-
-
-
- 
- 
- 
- 
- 
-# Task: chore: optimize docker resource limits and network configuration
-# Implemented during Pull Request #16
-# Timestamp: 2026-03-25T22:00:00
- 
- 
- 

@@ -29,7 +29,7 @@ public class FileStorageService {
     private String minioUrl;
 
     @PostConstruct
-    private void initBucket() {
+    public void initBucket() {
         try {
             boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
             if (!found) {
@@ -97,10 +97,3 @@ public class FileStorageService {
         }
     }
 }
- 
-/**
- * Task: refactor: implement robust file storage cleanup and monitoring
- * Implemented during Pull Request #24
- * Timestamp: 2026-04-06T23:00:00
- */
- 

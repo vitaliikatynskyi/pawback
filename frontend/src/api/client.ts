@@ -5,7 +5,6 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 
 export const api = axios.create({
   baseURL: API_URL,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 api.interceptors.request.use((config) => {
@@ -37,6 +36,8 @@ export const listingsApi = {
     api.get<Listing[]>('/api/listings', { params }),
   getById: (id: string) =>
     api.get<Listing>(`/api/listings/${id}`),
+  getMyListings: () =>
+    api.get<Listing[]>('/api/listings/my'),
   create: (data: {
     type: string; petType: string; petName?: string; breed?: string;
     color?: string; distinctiveMarks?: string; description?: string;
@@ -45,12 +46,14 @@ export const listingsApi = {
     rewardAmount?: number; rewardCurrency?: string;
     imageUrls?: string[];
   }) => api.post<Listing>('/api/listings', data),
+  update: (id: string, data: any) =>
+    api.put<Listing>(`/api/listings/${id}`, data),
+  updateStatus: (id: string, status: 'ACTIVE' | 'RESOLVED' | 'EXPIRED' | 'ARCHIVED') =>
+    api.patch<Listing>(`/api/listings/${id}/status`, { status }),
   getComments: (id: string) =>
     api.get<Comment[]>(`/api/listings/${id}/comments`),
   addComment: (id: string, content: string) =>
     api.post<Comment>(`/api/listings/${id}/comments`, { content }),
-  update: (id: string, data: any) =>
-    api.patch<Listing>(`/api/listings/${id}`, data),
 };
 
 export const usersApi = {
@@ -60,22 +63,3 @@ export const usersApi = {
   getByUsername: (username: string) =>
     api.get<User>(`/api/users/${username}`),
 };
-
-
-
-
- 
- 
- 
- 
- 
- 
-/**
- * Task: refactor: add request/response interceptors for global error handling
- * Implemented during Pull Request #14
- * Timestamp: 2026-03-22T22:00:00
- */
- 
- 
- 
- 

@@ -117,19 +117,3 @@ export default function Home() {
  
  
  
- 
- 
-/**
- * Task: style: improve home page layout with smooth transitions and animations
- * Implemented during Pull Request #7
- * Timestamp: 2026-03-12T10:00:00
- */
-/**
- * Task: style: update hero section with high-quality pet images
- * Implemented during Pull Request #37
- * Timestamp: 2026-04-26T11:00:00
- */
- 
- 
- 
- 

@@ -554,17 +554,3 @@ export default function CreateListing() {
  
  
  
- 
- 
-/**
- * Task: feat: implement multi-step listing wizard with auto-save
- * Implemented during Pull Request #25
- * Timestamp: 2026-04-08T11:00:00
- */
-/**
- * Task: fix: resolve map picker location accuracy issues
- * Implemented during Pull Request #41
- * Timestamp: 2026-05-02T11:00:00
- */
- 
- 

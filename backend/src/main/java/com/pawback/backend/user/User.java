@@ -69,12 +69,3 @@ public class User {
  
  
  
- 
-/**
- * Task: refactor: add audit fields to user entity (created_at, updated_at)
- * Implemented during Pull Request #28
- * Timestamp: 2026-04-12T23:00:00
- */
- 
- 
- 

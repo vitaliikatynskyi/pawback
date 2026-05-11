@@ -167,12 +167,3 @@ class ChatMessageDTO {
  
  
  
- 
-/**
- * Task: feat: add transaction logging and message validation logic
- * Implemented during Pull Request #3
- * Timestamp: 2026-03-06T10:00:00
- */
- 
- 
- 

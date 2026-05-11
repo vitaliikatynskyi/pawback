@@ -44,12 +44,3 @@ public class FileController {
  
  
  
- 
-/**
- * Task: feat: implement advanced file validation and mime-type checking
- * Implemented during Pull Request #5
- * Timestamp: 2026-03-09T10:00:00
- */
- 
- 
- 

@@ -664,17 +664,3 @@ export default function ListingDetail() {
  
  
  
- 
- 
-/**
- * Task: style: enhance listing detail page with image gallery and maps
- * Implemented during Pull Request #11
- * Timestamp: 2026-03-18T10:00:00
- */
-/**
- * Task: feat: implement social sharing for pet listings
- * Implemented during Pull Request #35
- * Timestamp: 2026-04-23T11:00:00
- */
- 
- 

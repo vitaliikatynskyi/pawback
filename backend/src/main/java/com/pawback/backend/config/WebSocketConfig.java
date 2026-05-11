@@ -72,10 +72,3 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         });
     }
 }
- 
-/**
- * Task: chore: secure websocket endpoints with jwt token validation
- * Implemented during Pull Request #26
- * Timestamp: 2026-04-09T23:00:00
- */
- 
