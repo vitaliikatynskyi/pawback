@@ -40,6 +40,7 @@ export default function Feed() {
   }, []);
 
   const filtered = listings.filter(l => {
+    if (l.status === 'ARCHIVED') return false;
     if (listingTypeFilter !== 'all' && l.type !== listingTypeFilter) return false;
     if (petTypeFilter !== 'all' && l.petType !== petTypeFilter) return false;
 

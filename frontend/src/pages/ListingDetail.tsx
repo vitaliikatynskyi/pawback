@@ -15,6 +15,7 @@ import {
   Loader2,
   Check,
   Edit,
+  Archive,
 } from 'lucide-react';
 import { listingsApi, usersApi } from '../api/client';
 import {
@@ -341,6 +342,29 @@ export default function ListingDetail() {
                     <span className="hidden md:inline">Відкрити знову</span>
                   </button>
                 ) : null}
+                {listing.status !== 'ARCHIVED' ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate('ARCHIVED')}
+                    disabled={updatingStatus}
+                    className="p-3 bg-gray-50 rounded-2xl border border-gray-100 text-text-muted hover:bg-gray-100 transition-colors flex items-center gap-2 font-bold text-sm disabled:opacity-50"
+                    title="Архівувати"
+                  >
+                    <Archive className="w-5 h-5" />
+                    <span className="hidden md:inline">В архів</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate('ACTIVE')}
+                    disabled={updatingStatus}
+                    className="p-3 bg-blue-50 rounded-2xl border border-blue-100 text-blue-600 hover:bg-blue-100 transition-colors flex items-center gap-2 font-bold text-sm disabled:opacity-50"
+                    title="Відновити з архіву"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    <span className="hidden md:inline">Відновити</span>
+                  </button>
+                )}
               </>
             )}
             <button

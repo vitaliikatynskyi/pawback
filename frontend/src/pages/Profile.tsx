@@ -12,6 +12,7 @@ import {
   Settings,
   Phone,
   Mail,
+  Archive,
 } from 'lucide-react';
 import { usersApi, listingsApi } from '../api/client';
 import type { User, Listing } from '../types';
@@ -84,7 +85,7 @@ export default function Profile() {
   const [myListings, setMyListings] = useState<Listing[]>([]);
   const [savedListings, setSavedListings] = useState<Listing[]>([]);
   const [helpedListings, setHelpedListings] = useState<Listing[]>([]);
-  const [tab, setTab] = useState<'listings' | 'helped' | 'saved'>('listings');
+  const [tab, setTab] = useState<'listings' | 'helped' | 'saved' | 'archive'>('listings');
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ displayName: '', bio: '', city: '', username: '', phoneNumber: '', email: '', newPassword: '' });
@@ -339,6 +340,7 @@ export default function Profile() {
           { key: 'listings', label: 'Мої оголошення' },
           { key: 'helped', label: 'Я допомагав' },
           { key: 'saved', label: 'Збережені' },
+          { key: 'archive', label: 'Архів' },
         ] as const).map(({ key, label }) => (
           <button
             key={key}
@@ -353,17 +355,35 @@ export default function Profile() {
 
       {/* Tab Content */}
       {tab === 'listings' && (
-        myListings.length === 0 ? (
+        myListings.filter(l => l.status !== 'ARCHIVED').length === 0 ? (
           renderEmptyState('📋', 'Ще немає оголошень', 'Створіть перше оголошення про пошук тваринки', 'Додати оголошення', '/add')
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myListings.map(listing => (
+            {myListings.filter(l => l.status !== 'ARCHIVED').map(listing => (
               <ListingCard
                 key={listing.id}
                 listing={listing}
                 isOwner={true}
                 badgeLabel={listing.status === 'ACTIVE' ? 'Активне' : listing.status === 'RESOLVED' ? 'Знайдено!' : listing.status}
                 badgeClassName={listing.status === 'ACTIVE' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}
+              />
+            ))}
+          </div>
+        )
+      )}
+
+      {tab === 'archive' && (
+        myListings.filter(l => l.status === 'ARCHIVED').length === 0 ? (
+          renderEmptyState('📁', 'Архів порожній', 'Тут будуть ваші заархівовані оголошення.', 'До стрічки', '/')
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {myListings.filter(l => l.status === 'ARCHIVED').map(listing => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                isOwner={true}
+                badgeLabel="В архіві"
+                badgeClassName="bg-gray-100 text-gray-500"
               />
             ))}
           </div>

@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, Check, MapPin, Plus, Trash2, LocateFixed } from 'luc
 import { listingsApi } from '../api/client';
 import { PET_TYPE_LABELS, type PetType } from '../types';
 import { saveListingImages } from '../lib/appUtils';
+import LocationPicker from '../components/LocationPicker';
 
 type ListingType = 'LOST' | 'FOUND';
 
@@ -430,26 +431,42 @@ export default function CreateListing() {
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-gray-100 font-bold text-text-dark hover:bg-gray-50 transition-all text-sm"
                     >
                       <LocateFixed className="w-4 h-4 text-primary" />
-                      {locationLoading ? 'Визначаємо...' : 'Визначити місце'}
+                      {locationLoading ? 'Визначаємо...' : 'Визначити по мені'}
                     </button>
                   </div>
+
+                  <LocationPicker 
+                    latitude={latitude ? Number(latitude) : null}
+                    longitude={longitude ? Number(longitude) : null}
+                    onChange={(lat, lng) => {
+                      setLatitude(lat.toFixed(6));
+                      setLongitude(lng.toFixed(6));
+                    }}
+                  />
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input
-                      type="number"
-                      step="any"
-                      value={latitude}
-                      onChange={e => setLatitude(e.target.value)}
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all text-text-dark"
-                      placeholder="Широта"
-                    />
-                    <input
-                      type="number"
-                      step="any"
-                      value={longitude}
-                      onChange={e => setLongitude(e.target.value)}
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all text-text-dark"
-                      placeholder="Довгота"
-                    />
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">Широта</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={latitude}
+                        onChange={e => setLatitude(e.target.value)}
+                        className="w-full px-4 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all text-text-dark"
+                        placeholder="48.4555"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider ml-1">Довгота</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={longitude}
+                        onChange={e => setLongitude(e.target.value)}
+                        className="w-full px-4 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all text-text-dark"
+                        placeholder="35.0222"
+                      />
+                    </div>
                   </div>
                 </div>
               </section>

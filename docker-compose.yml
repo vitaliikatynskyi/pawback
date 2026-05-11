@@ -76,6 +76,14 @@ services:
       postgres-db:
         condition: service_healthy
 
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: pawback-tunnel
+    command: tunnel --url http://frontend:80
+    restart: always
+    depends_on:
+      - frontend
+
 volumes:
   postgres_data:
   redis_data:
