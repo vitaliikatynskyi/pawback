@@ -31,6 +31,25 @@ export const authApi = {
     api.post<{ token: string }>('/api/auth/register', { email, password, displayName }),
 };
 
+export interface CreateListingPayload {
+  type: string;
+  petType: string;
+  petName?: string;
+  breed?: string;
+  color?: string;
+  distinctiveMarks?: string;
+  description?: string;
+  eventDate?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  district?: string;
+  addressText?: string;
+  rewardAmount?: number;
+  rewardCurrency?: string;
+  imageUrls?: string[];
+}
+
 export const listingsApi = {
   getAll: (params?: { type?: string; petType?: string; city?: string }) =>
     api.get<Listing[]>('/api/listings', { params }),
@@ -38,15 +57,9 @@ export const listingsApi = {
     api.get<Listing>(`/api/listings/${id}`),
   getMyListings: () =>
     api.get<Listing[]>('/api/listings/my'),
-  create: (data: {
-    type: string; petType: string; petName?: string; breed?: string;
-    color?: string; distinctiveMarks?: string; description?: string;
-    eventDate?: string; latitude?: number; longitude?: number;
-    city?: string; district?: string; addressText?: string;
-    rewardAmount?: number; rewardCurrency?: string;
-    imageUrls?: string[];
-  }) => api.post<Listing>('/api/listings', data),
-  update: (id: string, data: any) =>
+  create: (data: CreateListingPayload) =>
+    api.post<Listing>('/api/listings', data),
+  update: (id: string, data: CreateListingPayload) =>
     api.put<Listing>(`/api/listings/${id}`, data),
   updateStatus: (id: string, status: 'ACTIVE' | 'RESOLVED' | 'EXPIRED' | 'ARCHIVED') =>
     api.patch<Listing>(`/api/listings/${id}/status`, { status }),

@@ -59,6 +59,7 @@ export default function ListingDetail() {
   const [loading, setLoading] = useState(true);
   const [refreshingComments, setRefreshingComments] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<string[]>(
     () => loadStoredStringArray(STORAGE_KEYS.savedListings)
   );
@@ -216,6 +217,21 @@ export default function ListingDetail() {
     }
   };
 
+  const handleStatusUpdate = async (status: 'ACTIVE' | 'RESOLVED' | 'ARCHIVED') => {
+    if (!listing || !id) return;
+    setUpdatingStatus(true);
+    try {
+      const res = await listingsApi.updateStatus(id, status);
+      setListing(prev => prev ? { ...prev, status: res.data.status } : null);
+      const labels: Record<string, string> = { RESOLVED: 'Позначено як знайдено', ARCHIVED: 'Оголошення архівовано', ACTIVE: 'Оголошення знову активне' };
+      setNotice(labels[status] || 'Статус оновлено');
+    } catch {
+      setError('Не вдалося змінити статус');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   const refreshComments = async () => {
     if (!id) return;
     setRefreshingComments(true);
@@ -292,17 +308,40 @@ export default function ListingDetail() {
             <ArrowLeft className="w-5 h-5" />
             Назад до стрічки
           </Link>
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-wrap justify-end">
             {currentUser?.id === listing.author.id && (
-              <button
-                type="button"
-                onClick={() => navigate(`/edit/${listing.id}`)}
-                className="p-3 bg-white rounded-2xl border border-gray-100 text-primary hover:bg-orange-50 transition-colors flex items-center gap-2"
-                aria-label="Редагувати"
-              >
-                <Edit className="w-5 h-5" />
-                <span className="hidden md:inline font-bold">Редагувати</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/edit/${listing.id}`)}
+                  className="p-3 bg-white rounded-2xl border border-gray-100 text-primary hover:bg-orange-50 transition-colors flex items-center gap-2"
+                  aria-label="Редагувати"
+                >
+                  <Edit className="w-5 h-5" />
+                  <span className="hidden md:inline font-bold">Редагувати</span>
+                </button>
+                {listing.status === 'ACTIVE' ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate('RESOLVED')}
+                    disabled={updatingStatus}
+                    className="p-3 bg-green-50 rounded-2xl border border-green-100 text-green-700 hover:bg-green-100 transition-colors flex items-center gap-2 font-bold text-sm disabled:opacity-50"
+                  >
+                    <Check className="w-5 h-5" />
+                    <span className="hidden md:inline">Знайдено!</span>
+                  </button>
+                ) : listing.status === 'RESOLVED' ? (
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate('ACTIVE')}
+                    disabled={updatingStatus}
+                    className="p-3 bg-orange-50 rounded-2xl border border-orange-100 text-primary hover:bg-orange-100 transition-colors flex items-center gap-2 font-bold text-sm disabled:opacity-50"
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    <span className="hidden md:inline">Відкрити знову</span>
+                  </button>
+                ) : null}
+              </>
             )}
             <button
               type="button"
@@ -365,9 +404,17 @@ export default function ListingDetail() {
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-serif font-bold text-text-dark">
-                    {LISTING_TYPE_LABELS[listing.type]}: {listing.petName || 'Без імені'}
-                  </h1>
+                  <div className="flex items-center gap-3 flex-wrap mb-2">
+                    <h1 className="text-3xl md:text-4xl font-serif font-bold text-text-dark">
+                      {LISTING_TYPE_LABELS[listing.type]}: {listing.petName || 'Без імені'}
+                    </h1>
+                    {listing.status === 'RESOLVED' && (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">✓ Знайдено</span>
+                    )}
+                    {listing.status === 'ARCHIVED' && (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm font-bold">Архів</span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-3 mt-3 text-text-muted text-sm font-medium">
                     <span className="inline-flex items-center gap-1.5">
                       <Eye className="w-4 h-4" />

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec pawback-postgres *)",
+      "Bash(xargs cat)",
+      "Bash(docker compose *)",
+      "Bash(./gradlew build *)",
+      "Bash(docker cp *)",
+      "Bash(docker restart *)"
+    ]
+  }
+}

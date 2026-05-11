@@ -81,12 +81,12 @@ function ListingCard({
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [myListings, setMyListings] = useState<Listing[]>([]);
+  const [savedListings, setSavedListings] = useState<Listing[]>([]);
+  const [helpedListings, setHelpedListings] = useState<Listing[]>([]);
   const [tab, setTab] = useState<'listings' | 'helped' | 'saved'>('listings');
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [savedListingIds, setSavedListingIds] = useState<string[]>([]);
-  const [helpedListingIds, setHelpedListingIds] = useState<string[]>([]);
   const [editForm, setEditForm] = useState({ displayName: '', bio: '', city: '', username: '', phoneNumber: '', email: '', newPassword: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -94,7 +94,7 @@ export default function Profile() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [userRes, listingsRes] = await Promise.all([
+        const [userRes, myListingsRes] = await Promise.all([
           usersApi.getMe(),
           listingsApi.getMyListings(),
         ]);
@@ -109,9 +109,22 @@ export default function Profile() {
           email: userRes.data.email || '',
           newPassword: '',
         });
-        setListings(listingsRes.data);
-        setSavedListingIds(loadStoredStringArray(STORAGE_KEYS.savedListings));
-        setHelpedListingIds(loadStoredStringArray(STORAGE_KEYS.helpedListings));
+        setMyListings(myListingsRes.data);
+
+        const savedIds = loadStoredStringArray(STORAGE_KEYS.savedListings);
+        const helpedIds = loadStoredStringArray(STORAGE_KEYS.helpedListings);
+
+        const [savedResults, helpedResults] = await Promise.all([
+          savedIds.length > 0
+            ? Promise.all(savedIds.map(id => listingsApi.getById(id).then(r => r.data).catch(() => null)))
+            : Promise.resolve([]),
+          helpedIds.length > 0
+            ? Promise.all(helpedIds.map(id => listingsApi.getById(id).then(r => r.data).catch(() => null)))
+            : Promise.resolve([]),
+        ]);
+
+        setSavedListings(savedResults.filter((l): l is Listing => l !== null));
+        setHelpedListings(helpedResults.filter((l): l is Listing => l !== null));
       } catch {
         // not authenticated — show empty state
       } finally {
@@ -136,9 +149,6 @@ export default function Profile() {
     }
   };
 
-  const myListings = listings;
-  const savedListings = listings.filter(listing => savedListingIds.includes(listing.id));
-  const helpedListings = listings.filter(listing => helpedListingIds.includes(listing.id));
   const avatarLetter = user?.displayName?.[0]?.toUpperCase() || '?';
 
   if (loading) {
@@ -396,11 +406,3 @@ export default function Profile() {
     </div>
   );
 }
-
-
-
-
- 
- 
- 
- 

@@ -2,6 +2,7 @@ package com.pawback.backend.common;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,6 +31,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail handleAuthentication(AuthenticationException ex) {
         var pd = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Невірний email або пароль");
+        pd.setType(URI.create("about:blank"));
+        return pd;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Доступ заборонено");
         pd.setType(URI.create("about:blank"));
         return pd;
     }

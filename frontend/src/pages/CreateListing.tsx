@@ -461,7 +461,7 @@ export default function CreateListing() {
                   <h2 className="text-xl font-bold text-text-dark">Фото</h2>
                   <span className="text-xs font-bold uppercase tracking-widest text-text-muted">{images.length} файлів</span>
                 </div>
-                <p className="text-sm text-text-muted">Фото завантажуються в бекенд і зберігаються окремо від оголошення.</p>
+                <p className="text-sm text-text-muted">Фото зберігаються на сервері та доступні з будь-якого пристрою.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {existingImages.map((url, index) => (
                     <div key={`existing-${index}`} className="relative aspect-square rounded-2xl overflow-hidden border border-gray-100 bg-gray-50">
@@ -507,7 +507,7 @@ export default function CreateListing() {
                   />
                 </div>
                 <div className="text-xs text-text-muted leading-relaxed">
-                  Натисніть на плитку, щоб завантажити фото. Після публікації вони будуть доступні в цьому браузері.
+                  Натисніть на плитку, щоб завантажити фото. Підтримуються формати JPG, PNG, WebP до 10 МБ.
                 </div>
               </section>
 
