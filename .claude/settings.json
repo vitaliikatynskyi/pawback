@@ -4,7 +4,11 @@
       "Bash(npx tsc *)",
       "Bash(docker exec -i pawback-postgres psql -U pawback_user -d pawback -c ' *)",
       "Bash(docker exec *)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(mkdir -p /Users/ms/pawback/.vscode)"
+    ],
+    "additionalDirectories": [
+      "/Users/ms/pawback"
     ]
   }
 }

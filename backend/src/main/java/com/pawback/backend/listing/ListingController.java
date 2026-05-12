@@ -87,7 +87,7 @@ public class ListingController {
 
     @PostMapping("/similar")
     public List<ListingDto> findSimilar(@RequestBody EmbeddingRequest req) {
-        return listingService.findSimilar(req.embedding(), 20);
+        return listingService.findSimilar(req.embedding(), req.petType(), 20);
     }
 }
  

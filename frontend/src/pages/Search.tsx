@@ -10,25 +10,36 @@ import {
   type Listing,
 } from '../types';
 import { distanceKm, formatUkrDate, normalizeText } from '../lib/appUtils';
-import { getImageEmbedding } from '../lib/clip';
-
 const COLORS = ['Будь-який', 'Сірий', 'Чорний', 'Білий', 'Рудий', 'Триколір'];
-const SORTS = ['Нові', 'Поруч зі мною', 'Популярні', 'З винагородою', 'За схожістю'] as const;
+const SORTS = ['Нові', 'Поруч зі мною', 'Популярні', 'З винагородою'] as const;
 type SortOption = (typeof SORTS)[number];
 
-const PET_CAT = ['cat', 'tabby', 'persian', 'siamese', 'egyptian cat', 'kitten'];
-const PET_DOG = ['dog', 'retriever', 'terrier', 'spaniel', 'puppy', 'hound', 'poodle'];
+const PET_CAT = [
+  'cat', 'tabby', 'persian', 'siamese', 'egyptian', 'kitten', 'tiger cat',
+  'angora', 'burmese', 'ragdoll', 'maine coon',
+];
+const PET_DOG = [
+  'dog', 'retriever', 'terrier', 'spaniel', 'puppy', 'hound', 'poodle',
+  'bulldog', 'shepherd', 'husky', 'labrador', 'beagle', 'dachshund',
+  'boxer', 'pug', 'schnauzer', 'corgi', 'chihuahua', 'collie', 'rottweiler',
+  'dalmatian', 'samoyed', 'vizsla', 'bloodhound', 'weimaraner', 'doberman',
+  'wolfhound', 'greyhound', 'mastiff', 'setter', 'pointer',
+];
+
+let mnModel: Awaited<ReturnType<typeof import('@tensorflow-models/mobilenet').load>> | null = null;
 
 async function detectPetType(file: File): Promise<string | null> {
   try {
-    await import('@tensorflow/tfjs');
-    const mobilenet = await import('@tensorflow-models/mobilenet');
-    const model = await mobilenet.load();
+    if (!mnModel) {
+      await import('@tensorflow/tfjs');
+      const mn = await import('@tensorflow-models/mobilenet');
+      mnModel = await mn.load();
+    }
     const img = document.createElement('img');
     img.src = URL.createObjectURL(file);
     await new Promise<void>(r => { img.onload = () => r(); });
     type Pred = { className: string; probability: number };
-    const preds = await model.classify(img) as Pred[];
+    const preds = await mnModel.classify(img) as Pred[];
     URL.revokeObjectURL(img.src);
     for (const p of preds) {
       const c = p.className.toLowerCase();
@@ -39,27 +50,6 @@ async function detectPetType(file: File): Promise<string | null> {
   } catch { return null; }
 }
 
-const indexed = new Set<string>();
-
-async function indexUnindexedListings(listings: Listing[]) {
-  const toIndex = listings.filter(l => l.imageUrls?.length && !indexed.has(l.id));
-  await Promise.all(
-    toIndex.map(async listing => {
-      const url = listing.imageUrls![0];
-      indexed.add(listing.id);
-      try {
-        const res = await fetch(url, { credentials: 'omit' });
-        if (!res.ok) throw new Error();
-        const blob = await res.blob();
-        const file = new File([blob], 'img.jpg', { type: blob.type });
-        const embedding = await getImageEmbedding(file);
-        await listingsApi.saveEmbedding(listing.id, embedding);
-      } catch {
-        indexed.delete(listing.id);
-      }
-    })
-  );
-}
 
 export default function Search() {
   const [query, setQuery] = useState('');
@@ -171,8 +161,6 @@ export default function Search() {
           .filter(listing => Boolean(listing.rewardAmount))
           .sort((a, b) => Number(b.rewardAmount || 0) - Number(a.rewardAmount || 0));
         break;
-      case 'За схожістю':
-        break; // backend returns pre-sorted results
       case 'Нові':
       default:
         data = [...data].sort(
@@ -198,44 +186,19 @@ export default function Search() {
     if (!file) return;
 
     setAnalyzing(true);
-    setShowFilters(true);
     setSimilarListings(null);
 
     try {
       setAnalyzingStatus('Визначаємо тварину...');
+      const detectedType = await detectPetType(file);
 
-      // Step 1: detect pet type + compute embedding in parallel
-      const [detectedType, embedding] = await Promise.all([
-        detectPetType(file),
-        getImageEmbedding(file),
-      ]);
-
-      if (detectedType) setPetType(detectedType);
-
-      // Step 2: fetch base listings filtered by type + run similarity search in parallel
-      setAnalyzingStatus('Шукаємо схожих...');
-      const baseParams: Record<string, string> = {};
-      if (detectedType) baseParams.petType = detectedType;
-
-      const [baseRes, similarRes] = await Promise.all([
-        listingsApi.getAll(baseParams),
-        listingsApi.findSimilar(embedding),
-      ]);
-
-      // Step 3: merge — similarity-ranked first, then rest of same type
-      if (similarRes.data.length > 0) {
-        const similarIds = new Set(similarRes.data.map(l => l.id));
-        setSimilarListings([
-          ...similarRes.data,
-          ...baseRes.data.filter(l => !similarIds.has(l.id)),
-        ]);
-      } else {
-        setSimilarListings(baseRes.data);
+      if (detectedType) {
+        setPetType(detectedType);
+        setAnalyzingStatus('Шукаємо...');
+        const res = await listingsApi.getAll({ petType: detectedType });
+        setSimilarListings(res.data);
+        setSort('Нові');
       }
-      setSort('За схожістю');
-
-      // Index listing images in background for future searches
-      indexUnindexedListings(baseRes.data);
     } catch {
       // fallback: normal search still visible
     } finally {
@@ -403,7 +366,7 @@ export default function Search() {
           <div className="space-y-2">
             <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Сортування</label>
             <div className="flex flex-wrap gap-2">
-              {SORTS.filter(o => o !== 'За схожістю' || similarListings !== null).map(option => (
+              {SORTS.map(option => (
                 <button
                   key={option}
                   type="button"

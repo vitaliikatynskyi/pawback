@@ -69,8 +69,8 @@ export const listingsApi = {
     api.post<Comment>(`/api/listings/${id}/comments`, { content }),
   saveEmbedding: (id: string, embedding: number[]) =>
     api.post(`/api/listings/${id}/embedding`, { embedding }),
-  findSimilar: (embedding: number[]) =>
-    api.post<Listing[]>('/api/listings/similar', { embedding }),
+  findSimilar: (embedding: number[], petType?: string) =>
+    api.post<Listing[]>('/api/listings/similar', { embedding, petType }),
 };
 
 export const usersApi = {

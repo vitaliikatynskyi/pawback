@@ -188,16 +188,18 @@ public class ListingService {
     @Transactional
     public void saveEmbedding(UUID listingId, List<Float> embedding) {
         String vec = "[" + embedding.stream().map(Object::toString).collect(Collectors.joining(",")) + "]";
-        jdbcTemplate.update("UPDATE listings SET embedding = ?::vector WHERE id = ?", vec, listingId);
+        jdbcTemplate.update("UPDATE listings SET embedding = CAST(? AS vector) WHERE id = ?", vec, listingId);
     }
 
-    public List<ListingDto> findSimilar(List<Float> queryEmbedding, int limit) {
+    public List<ListingDto> findSimilar(List<Float> queryEmbedding, String petType, int limit) {
         String vec = "[" + queryEmbedding.stream().map(Object::toString).collect(Collectors.joining(",")) + "]";
+        boolean filterType = petType != null && !petType.isBlank();
         List<UUID> ids = jdbcTemplate.query(
             "SELECT id FROM listings WHERE embedding IS NOT NULL AND status = 'ACTIVE' " +
-            "ORDER BY embedding <=> ?::vector LIMIT ?",
+            (filterType ? "AND UPPER(pet_type) = UPPER(?) " : "") +
+            "ORDER BY embedding <=> CAST(? AS vector) LIMIT ?",
             (rs, n) -> UUID.fromString(rs.getString("id")),
-            vec, limit
+            filterType ? new Object[]{petType, vec, limit} : new Object[]{vec, limit}
         );
         return ids.stream()
             .map(listingRepository::findById)
