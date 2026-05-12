@@ -63,6 +63,8 @@ export interface ChatMessage {
   fileUrl?: string;
   fileType?: 'IMAGE' | 'FILE' | 'LOCATION';
   timestamp: string;
+  isEdited?: boolean;
+  isDeleted?: boolean;
 }
 
 export type PetType = 'CAT' | 'DOG' | 'OTHER';

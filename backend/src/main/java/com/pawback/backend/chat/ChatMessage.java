@@ -35,6 +35,14 @@ public class ChatMessage {
 
     private LocalDateTime timestamp;
 
+    @Column(name = "is_edited")
+    @Builder.Default
+    private Boolean isEdited = false;
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean isDeleted = false;
+
     @PrePersist
     protected void onCreate() {
         timestamp = LocalDateTime.now();

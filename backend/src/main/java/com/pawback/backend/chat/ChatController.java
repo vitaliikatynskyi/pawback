@@ -147,6 +147,49 @@ public class ChatController {
 
             return ResponseEntity.ok(saved);
         }
+
+        @org.springframework.web.bind.annotation.PutMapping("/messages/{id}")
+        public ResponseEntity<ChatMessage> editMessage(@PathVariable Long id, @org.springframework.web.bind.annotation.RequestBody Map<String, String> payload, Authentication authentication) {
+            User currentUser = userRepository.findByEmail(authentication.getName()).orElseThrow();
+            ChatMessage msg = chatMessageRepository.findById(id).orElseThrow();
+            
+            if (!msg.getSender().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("Unauthorized");
+            }
+            
+            msg.setContent(payload.get("content"));
+            msg.setIsEdited(true);
+            ChatMessage saved = chatMessageRepository.save(msg);
+            
+            try {
+                messagingTemplate.convertAndSendToUser(msg.getRecipient().getEmail(), "/queue/messages", saved);
+                messagingTemplate.convertAndSendToUser(msg.getSender().getEmail(), "/queue/messages", saved);
+            } catch (Exception ignored) {}
+            
+            return ResponseEntity.ok(saved);
+        }
+
+        @org.springframework.web.bind.annotation.DeleteMapping("/messages/{id}")
+        public ResponseEntity<ChatMessage> deleteMessage(@PathVariable Long id, Authentication authentication) {
+            User currentUser = userRepository.findByEmail(authentication.getName()).orElseThrow();
+            ChatMessage msg = chatMessageRepository.findById(id).orElseThrow();
+            
+            if (!msg.getSender().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("Unauthorized");
+            }
+            
+            msg.setIsDeleted(true);
+            msg.setContent("");
+            msg.setFileUrl(null);
+            ChatMessage saved = chatMessageRepository.save(msg);
+            
+            try {
+                messagingTemplate.convertAndSendToUser(msg.getRecipient().getEmail(), "/queue/messages", saved);
+                messagingTemplate.convertAndSendToUser(msg.getSender().getEmail(), "/queue/messages", saved);
+            } catch (Exception ignored) {}
+            
+            return ResponseEntity.ok(saved);
+        }
     }
 }
 

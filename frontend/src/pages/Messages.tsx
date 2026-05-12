@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Send, User, MessageSquare, Loader2, Paperclip, Navigation, MapPin, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Search, Send, User, MessageSquare, Loader2, Paperclip, Navigation, MapPin, AlertCircle, Wifi, WifiOff, Pencil, Trash2, X, Check } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
 import { api } from '../api/client';
 import { decodeJwtPayload } from '../lib/appUtils';
@@ -13,6 +13,7 @@ export default function Messages() {
   const [activeChat, setActiveChat] = useState<ChatContact | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [sending, setSending] = useState(false);
@@ -77,7 +78,7 @@ export default function Messages() {
             if (!fromActive && !toActive) return;
           }
           setMessages(prev =>
-            prev.some(m => m.id === msg.id) ? prev : [...prev, msg]
+            prev.some(m => m.id === msg.id) ? prev.map(m => m.id === msg.id ? msg : m) : [...prev, msg]
           );
         });
       },
@@ -151,7 +152,7 @@ export default function Messages() {
     return () => clearTimeout(timer);
   }, [searchQuery, token, currentUserEmail]);
 
-  // Send message via REST (always works) + optionally via WS
+  // Send or edit message
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeChat || !newMessage.trim() || sending) return;
@@ -162,20 +163,37 @@ export default function Messages() {
     setError('');
 
     try {
-      const res = await api.post('/api/chat/send', {
-        recipientId: activeChat.id,
-        content,
-      });
-      // Add to local messages immediately
-      setMessages(prev =>
-        prev.some(m => m.id === res.data.id) ? prev : [...prev, res.data]
-      );
+      if (editingMessageId) {
+        const res = await api.put(`/api/chat/messages/${editingMessageId}`, { content });
+        setMessages(prev => prev.map(m => m.id === res.data.id ? res.data : m));
+        setEditingMessageId(null);
+      } else {
+        const res = await api.post('/api/chat/send', {
+          recipientId: activeChat.id,
+          content,
+        });
+        setMessages(prev => prev.some(m => m.id === res.data.id) ? prev.map(m => m.id === res.data.id ? res.data : m) : [...prev, res.data]);
+      }
     } catch {
-      setError('Не вдалося надіслати повідомлення. Спробуйте ще раз.');
+      setError('Не вдалося зберегти повідомлення. Спробуйте ще раз.');
       setNewMessage(content); // restore
     } finally {
       setSending(false);
     }
+  };
+
+  const deleteMessage = async (id: number) => {
+    try {
+      const res = await api.delete(`/api/chat/messages/${id}`);
+      setMessages(prev => prev.map(m => m.id === id ? res.data : m));
+    } catch {
+      setError('Не вдалося видалити повідомлення.');
+    }
+  };
+
+  const startEditing = (msg: ChatMessage) => {
+    setEditingMessageId(msg.id);
+    setNewMessage(msg.content);
   };
 
   const sendLocation = () => {
@@ -190,7 +208,7 @@ export default function Messages() {
           longitude,
           fileType: 'LOCATION',
         });
-        setMessages(prev => prev.some(m => m.id === res.data.id) ? prev : [...prev, res.data]);
+        setMessages(prev => prev.some(m => m.id === res.data.id) ? prev.map(m => m.id === res.data.id ? res.data : m) : [...prev, res.data]);
       } catch {
         setError('Не вдалося надіслати локацію');
       }
@@ -213,7 +231,7 @@ export default function Messages() {
         fileUrl,
         fileType,
       });
-      setMessages(prev => prev.some(m => m.id === res.data.id) ? prev : [...prev, res.data]);
+      setMessages(prev => prev.some(m => m.id === res.data.id) ? prev.map(m => m.id === res.data.id ? res.data : m) : [...prev, res.data]);
     } catch {
       setError('Не вдалося завантажити файл');
     } finally {
@@ -338,46 +356,67 @@ export default function Messages() {
                 messages.map((msg: ChatMessage, index: number) => {
                   const isMe = !!currentUserEmail && msg.sender?.email === currentUserEmail;
                   return (
-                    <div key={msg.id || `${msg.timestamp}-${index}`} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <div className={`max-w-[80%] rounded-2xl p-4 ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white text-text-dark border border-gray-100 rounded-bl-none shadow-sm'}`}>
-                        {msg.fileType === 'IMAGE' && (
-                          <div className="mb-2 rounded-lg overflow-hidden">
-                            <img
-                              src={msg.fileUrl}
-                              alt="Фото"
-                              className="max-w-full h-auto cursor-pointer hover:opacity-90"
-                              onClick={() => window.open(msg.fileUrl, '_blank')}
-                            />
-                          </div>
-                        )}
-                        {msg.fileType === 'FILE' && (
-                          <a href={msg.fileUrl} target="_blank" rel="noreferrer"
-                            className="flex items-center gap-2 mb-2 p-2 bg-black/5 rounded-lg hover:bg-black/10 transition-colors">
-                            <Paperclip className="w-4 h-4" />
-                            <span className="text-sm truncate max-w-[200px]">{msg.content}</span>
-                          </a>
-                        )}
-                        {msg.fileType === 'LOCATION' && (
-                          <div className="mb-2 p-2 bg-black/5 rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <MapPin className="w-4 h-4 text-red-500" />
-                              <span className="text-xs font-bold uppercase">Локація</span>
+                    <div key={msg.id || `${msg.timestamp}-${index}`} className={`flex flex-col group ${isMe ? 'items-end' : 'items-start'}`}>
+                      {msg.isDeleted ? (
+                        <div className="max-w-[80%] rounded-2xl p-4 bg-gray-50 text-gray-400 border border-gray-100 shadow-sm italic text-sm">
+                          Повідомлення видалено
+                        </div>
+                      ) : (
+                        <div className="flex items-end gap-2">
+                          {isMe && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pb-1">
+                              {(!msg.fileType || msg.fileType !== 'FILE') && msg.fileType !== 'LOCATION' && msg.fileType !== 'IMAGE' && (
+                                <button onClick={() => startEditing(msg)} className="p-1.5 text-gray-400 hover:text-primary rounded-full hover:bg-orange-50 transition-colors" title="Редагувати">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button onClick={() => deleteMessage(msg.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors" title="Видалити">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            <a
-                              href={`https://www.google.com/maps?q=${msg.latitude},${msg.longitude}`}
-                              target="_blank" rel="noreferrer"
-                              className="text-sm underline"
-                            >
-                              Переглянути на карті
-                            </a>
+                          )}
+                          <div className={`max-w-[80%] rounded-2xl p-4 ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white text-text-dark border border-gray-100 rounded-bl-none shadow-sm'}`}>
+                            {msg.fileType === 'IMAGE' && (
+                              <div className="mb-2 rounded-lg overflow-hidden">
+                                <img
+                                  src={msg.fileUrl}
+                                  alt="Фото"
+                                  className="max-w-full h-auto cursor-pointer hover:opacity-90"
+                                  onClick={() => window.open(msg.fileUrl, '_blank')}
+                                />
+                              </div>
+                            )}
+                            {msg.fileType === 'FILE' && (
+                              <a href={msg.fileUrl} target="_blank" rel="noreferrer"
+                                className="flex items-center gap-2 mb-2 p-2 bg-black/5 rounded-lg hover:bg-black/10 transition-colors">
+                                <Paperclip className="w-4 h-4" />
+                                <span className="text-sm truncate max-w-[200px]">{msg.content}</span>
+                              </a>
+                            )}
+                            {msg.fileType === 'LOCATION' && (
+                              <div className="mb-2 p-2 bg-black/5 rounded-lg">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <MapPin className="w-4 h-4 text-red-500" />
+                                  <span className="text-xs font-bold uppercase">Локація</span>
+                                </div>
+                                <a
+                                  href={`https://www.google.com/maps?q=${msg.latitude},${msg.longitude}`}
+                                  target="_blank" rel="noreferrer"
+                                  className="text-sm underline"
+                                >
+                                  Переглянути на карті
+                                </a>
+                              </div>
+                            )}
+                            {(!msg.fileType || msg.fileType !== 'FILE') && (
+                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            )}
                           </div>
-                        )}
-                        {(!msg.fileType || msg.fileType !== 'FILE') && (
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-text-muted mt-1 px-1 font-medium">
+                        </div>
+                      )}
+                      <div className="text-[10px] text-text-muted mt-1 px-1 font-medium flex gap-1">
                         {new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' }).format(new Date(msg.timestamp))}
+                        {msg.isEdited && !msg.isDeleted && <span>· відредаговано</span>}
                       </div>
                     </div>
                   );
@@ -394,11 +433,22 @@ export default function Messages() {
                   <button onClick={() => setError('')} className="ml-auto text-red-400 hover:text-red-600">✕</button>
                 </div>
               )}
+              {editingMessageId && (
+                <div className="flex items-center justify-between mb-2 p-2 bg-orange-50 text-orange-800 rounded-lg text-sm border border-orange-100">
+                  <div className="flex items-center gap-2">
+                    <Pencil className="w-4 h-4" />
+                    <span className="font-medium">Редагування повідомлення...</span>
+                  </div>
+                  <button onClick={() => { setEditingMessageId(null); setNewMessage(''); }} className="p-1 hover:bg-orange-100 rounded-full transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-2 mb-3">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  disabled={uploading || !!editingMessageId}
                   className="p-2.5 bg-gray-50 text-text-muted rounded-xl hover:bg-orange-50 hover:text-primary transition-all disabled:opacity-50"
                   title="Додати файл або фото"
                 >
@@ -407,7 +457,8 @@ export default function Messages() {
                 <button
                   type="button"
                   onClick={sendLocation}
-                  className="p-2.5 bg-gray-50 text-text-muted rounded-xl hover:bg-orange-50 hover:text-primary transition-all"
+                  disabled={!!editingMessageId}
+                  className="p-2.5 bg-gray-50 text-text-muted rounded-xl hover:bg-orange-50 hover:text-primary transition-all disabled:opacity-50"
                   title="Надіслати локацію"
                 >
                   <Navigation className="w-5 h-5" />
@@ -430,7 +481,7 @@ export default function Messages() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-primary text-white rounded-full hover:bg-primary-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                   aria-label="Надіслати"
                 >
-                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 translate-x-[1px] -translate-y-[1px]" />}
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingMessageId ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4 translate-x-[1px] -translate-y-[1px]" />)}
                 </button>
               </form>
             </div>
