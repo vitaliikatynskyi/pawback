@@ -74,7 +74,7 @@ export default function Login() {
                <img src="https://api.iconify.design/fluent-emoji-flat:dog-face.svg" className="w-full h-full opacity-80" alt="dog" />
             </div>
             <div className="aspect-square bg-[#FEF3C7] rounded-[40px] flex items-center justify-center p-8">
-               <img src="https://api.iconify.design/fluent-emoji-flat:hamster-face.svg" className="w-full h-full opacity-80" alt="hamster" />
+               <img src="https://api.iconify.design/fluent-emoji-flat:hamster.svg" className="w-full h-full opacity-80" alt="hamster" />
             </div>
             <div className="aspect-square bg-[#E0F2FE] rounded-[40px] flex items-center justify-center p-8">
                <img src="https://api.iconify.design/fluent-emoji-flat:rabbit-face.svg" className="w-full h-full opacity-80" alt="rabbit" />
