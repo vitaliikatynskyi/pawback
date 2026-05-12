@@ -45,6 +45,6 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
     implementation("org.hibernate.orm:hibernate-spatial")
-    implementation("io.minio:minio:8.5.9")
+    implementation("com.cloudinary:cloudinary-http44:1.36.0")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
 }
