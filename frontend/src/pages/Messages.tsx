@@ -362,9 +362,9 @@ export default function Messages() {
                           Повідомлення видалено
                         </div>
                       ) : (
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-end gap-2 max-w-[90%] md:max-w-[80%]">
                           {isMe && (
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pb-1">
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pb-1 shrink-0">
                               {(!msg.fileType || msg.fileType !== 'FILE') && msg.fileType !== 'LOCATION' && msg.fileType !== 'IMAGE' && (
                                 <button onClick={() => startEditing(msg)} className="p-1.5 text-gray-400 hover:text-primary rounded-full hover:bg-orange-50 transition-colors" title="Редагувати">
                                   <Pencil className="w-3.5 h-3.5" />
@@ -375,7 +375,7 @@ export default function Messages() {
                               </button>
                             </div>
                           )}
-                          <div className={`max-w-[80%] rounded-2xl p-4 ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white text-text-dark border border-gray-100 rounded-bl-none shadow-sm'}`}>
+                          <div className={`rounded-2xl p-4 ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white text-text-dark border border-gray-100 rounded-bl-none shadow-sm'}`}>
                             {msg.fileType === 'IMAGE' && (
                               <div className="mb-2 rounded-lg overflow-hidden">
                                 <img
