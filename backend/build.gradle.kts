@@ -35,16 +35,15 @@ dependencies {
 	testCompileOnly("org.projectlombok:lombok")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor("org.projectlombok:lombok")
-}
 
-tasks.withType<Test> {
-	useJUnitPlatform()
-}
-dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
     implementation("org.hibernate.orm:hibernate-spatial")
     implementation("com.cloudinary:cloudinary-http44:1.36.0")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
+}
+
+tasks.withType<Test> {
+	useJUnitPlatform()
 }

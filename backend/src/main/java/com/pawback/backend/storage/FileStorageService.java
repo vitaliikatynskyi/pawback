@@ -38,7 +38,7 @@ public class FileStorageService {
             if (cloudinary == null) {
                 throw new RuntimeException("Cloudinary is not configured");
             }
-            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
             return uploadResult.get("secure_url").toString();
         } catch (Exception e) {
             log.error("Failed to upload file to Cloudinary", e);
