@@ -43,7 +43,7 @@ export default function Messages() {
     setLoadingContacts(true);
     api.get('/api/chat/contacts')
       .then(res => setContacts(Array.isArray(res.data) ? res.data : []))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingContacts(false));
   }, [token]);
 
@@ -51,7 +51,7 @@ export default function Messages() {
   const [me, setMe] = useState<ChatContact | null>(null);
   useEffect(() => {
     if (!token) return;
-    api.get('/api/users/me').then(res => setMe(res.data)).catch(() => {});
+    api.get('/api/users/me').then(res => setMe(res.data)).catch(() => { });
   }, [token]);
 
   // Connect WebSocket for live updates (optional - messages work without it)
@@ -261,7 +261,7 @@ export default function Messages() {
             <h2 className="text-2xl font-bold font-serif text-text-dark">Чати</h2>
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isWsConnected ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
               {isWsConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-              {isWsConnected ? 'Live' : 'REST'}
+              {/* {isWsConnected ? 'Live' : 'REST'} */}
             </div>
             {loadingContacts && <Loader2 className="w-5 h-5 text-text-muted animate-spin" />}
           </div>
@@ -499,11 +499,11 @@ export default function Messages() {
     </div>
   );
 }
- 
- 
- 
- 
- 
- 
- 
- 
+
+
+
+
+
+
+
+
