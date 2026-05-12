@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(docker exec -i pawback-postgres psql -U pawback_user -d pawback -c ' *)",
+      "Bash(docker exec *)",
+      "Bash(python3 -c ' *)"
     ]
   }
 }

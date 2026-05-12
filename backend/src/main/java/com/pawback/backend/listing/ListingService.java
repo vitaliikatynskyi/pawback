@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ public class ListingService {
     private final UserRepository userRepository;
     private final com.pawback.backend.notification.NotificationService notificationService;
     private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     private static final GeometryFactory GEO = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -180,6 +183,27 @@ public class ListingService {
         }
 
         return CommentDto.from(saved);
+    }
+
+    @Transactional
+    public void saveEmbedding(UUID listingId, List<Float> embedding) {
+        String vec = "[" + embedding.stream().map(Object::toString).collect(Collectors.joining(",")) + "]";
+        jdbcTemplate.update("UPDATE listings SET embedding = ?::vector WHERE id = ?", vec, listingId);
+    }
+
+    public List<ListingDto> findSimilar(List<Float> queryEmbedding, int limit) {
+        String vec = "[" + queryEmbedding.stream().map(Object::toString).collect(Collectors.joining(",")) + "]";
+        List<UUID> ids = jdbcTemplate.query(
+            "SELECT id FROM listings WHERE embedding IS NOT NULL AND status = 'ACTIVE' " +
+            "ORDER BY embedding <=> ?::vector LIMIT ?",
+            (rs, n) -> UUID.fromString(rs.getString("id")),
+            vec, limit
+        );
+        return ids.stream()
+            .map(listingRepository::findById)
+            .filter(Optional::isPresent)
+            .map(o -> ListingDto.from(o.get()))
+            .toList();
     }
 }
 

@@ -5,6 +5,7 @@ import { listingsApi } from '../api/client';
 import { PET_TYPE_LABELS, type PetType } from '../types';
 import { saveListingImages } from '../lib/appUtils';
 import LocationPicker from '../components/LocationPicker';
+import { getImageEmbedding } from '../lib/clip';
 
 type ListingType = 'LOST' | 'FOUND';
 
@@ -77,6 +78,95 @@ export default function CreateListing() {
     };
   }, [images]);
 
+  const [aiSuggestion, setAiSuggestion] = useState<{ label: string; confidence: number } | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const analyzeImage = async (file: File) => {
+    setAnalyzing(true);
+    setAiSuggestion(null);
+    try {
+      // Dynamic import to keep bundle small
+      await import('@tensorflow/tfjs');
+      const mobilenet = await import('@tensorflow-models/mobilenet');
+      
+      // Load model (usually cached by browser)
+      const model = await mobilenet.load();
+      
+      // Create image element for TF
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const predictions = await model.classify(img);
+      
+      // Filter keywords
+      const petKeywords = {
+        'CAT': ['cat', 'tabby', 'persian', 'siamese', 'egyptian cat', 'kitten'],
+        'DOG': ['dog', 'retriever', 'terrier', 'spaniel', 'puppy', 'hound', 'poodle']
+      };
+
+      const colorKeywords = [
+        { key: 'Білий', terms: ['white', 'snow', 'albino'] },
+        { key: 'Чорний', terms: ['black', 'dark', 'charcoal'] },
+        { key: 'Рудий', terms: ['orange', 'red', 'ginger', 'golden', 'gold'] },
+        { key: 'Сірий', terms: ['grey', 'gray', 'silver', 'blue cat'] },
+        { key: 'Коричневий', terms: ['brown', 'chocolate', 'tan'] },
+      ];
+
+      type Prediction = { className: string; probability: number };
+      const typedPredictions = predictions as Prediction[];
+      const topPrediction = typedPredictions[0] ?? null;
+
+      let detectedPet: PetType | null = null;
+      let detectedColor = '';
+      let hasCollar = false;
+
+      typedPredictions.forEach((pred) => {
+        const className = pred.className.toLowerCase();
+
+        // Pet Type
+        if (!detectedPet) {
+          if (petKeywords.CAT.some(k => className.includes(k))) detectedPet = 'CAT';
+          else if (petKeywords.DOG.some(k => className.includes(k))) detectedPet = 'DOG';
+        }
+
+        // Color
+        colorKeywords.forEach(ck => {
+          if (!detectedColor && ck.terms.some(t => className.includes(t))) {
+            detectedColor = ck.key;
+          }
+        });
+
+        // Collar
+        if (className.includes('collar') || className.includes('harness') || className.includes('neckband')) {
+          hasCollar = true;
+        }
+      });
+
+      if (detectedPet) setPetType(detectedPet);
+      if (detectedColor) setColor(detectedColor);
+      if (hasCollar) {
+        setDistinctiveMarks(prev => prev.includes('ошийник') ? prev : (prev ? prev + ', ошийник' : 'ошийник'));
+      }
+
+      if (topPrediction) {
+        setAiSuggestion({
+          label: `${detectedPet === 'CAT' ? 'Кіт' : detectedPet === 'DOG' ? 'Пес' : 'Тварина'}${detectedColor ? ' (' + detectedColor + ')' : ''}${hasCollar ? ' + ошийник' : ''}`,
+          confidence: Math.round(topPrediction.probability * 100)
+        });
+      }
+      
+      URL.revokeObjectURL(img.src);
+    } catch (e) {
+      console.error('AI analysis failed:', e);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
@@ -86,6 +176,10 @@ export default function CreateListing() {
       preview: URL.createObjectURL(file),
     }));
     setImages(previous => [...previous, ...draftImages]);
+    
+    // Analyze the first image for pet type
+    void analyzeImage(files[0]);
+    
     event.target.value = '';
   };
 
@@ -194,6 +288,15 @@ export default function CreateListing() {
         saveListingImages(response.data.id, allImageUrls);
       }
 
+      // Fire-and-forget: compute CLIP embedding for similarity search
+      if (!isEdit && images.length > 0) {
+        const listingId = response.data.id;
+        const firstFile = images[0].file;
+        getImageEmbedding(firstFile)
+          .then(embedding => listingsApi.saveEmbedding(listingId, embedding))
+          .catch(() => {});
+      }
+
       navigate(`/listing/${response.data.id}`, { replace: true });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Помилка при збереженні');
@@ -256,18 +359,26 @@ export default function CreateListing() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider ml-1">Тип тварини</label>
-                    <select
-                      value={petType}
-                      onChange={e => setPetType(e.target.value as PetType)}
-                      className="w-full px-4 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all text-text-dark"
-                    >
-                      {PET_TYPES.map(option => (
-                        <option key={option} value={option}>{PET_TYPE_LABELS[option]}</option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-text-muted uppercase tracking-wider ml-1">Тип тварини</label>
+                        {analyzing && <span className="text-[10px] text-primary animate-pulse font-bold">AI аналізує фото...</span>}
+                        {aiSuggestion && !analyzing && (
+                          <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                            AI підказує: {aiSuggestion.label} ({aiSuggestion.confidence}%)
+                          </span>
+                        )}
+                      </div>
+                      <select
+                        value={petType}
+                        onChange={e => setPetType(e.target.value as PetType)}
+                        className="w-full px-4 py-4 rounded-2xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all text-text-dark"
+                      >
+                        {PET_TYPES.map(option => (
+                          <option key={option} value={option}>{PET_TYPE_LABELS[option]}</option>
+                        ))}
+                      </select>
+                    </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-text-muted uppercase tracking-wider ml-1">

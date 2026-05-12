@@ -50,6 +50,7 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // /api/listings/my requires auth — must be declared before the wildcard
                 .requestMatchers(HttpMethod.GET, "/api/listings/my").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/listings/similar").permitAll()
                 .requestMatchers(HttpMethod.GET,
                         "/api/listings",
                         "/api/listings/*",

@@ -78,6 +78,17 @@ public class ListingController {
         }
         return ResponseEntity.ok(listingService.addComment(id, content));
     }
+
+    @PostMapping("/{id}/embedding")
+    public ResponseEntity<Void> saveEmbedding(@PathVariable UUID id, @RequestBody EmbeddingRequest req) {
+        listingService.saveEmbedding(id, req.embedding());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/similar")
+    public List<ListingDto> findSimilar(@RequestBody EmbeddingRequest req) {
+        return listingService.findSimilar(req.embedding(), 20);
+    }
 }
  
  

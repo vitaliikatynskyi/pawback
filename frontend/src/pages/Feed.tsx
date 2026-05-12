@@ -18,12 +18,21 @@ const FILTER_TABS = [
   { val: 'FOUND', label: 'Знайдено', kind: 'listing' as const },
 ] as const;
 
+const COLOR_FILTERS = [
+  { val: 'Білий', color: 'bg-white border-gray-200' },
+  { val: 'Чорний', color: 'bg-black text-white' },
+  { val: 'Рудий', color: 'bg-orange-400 text-white' },
+  { val: 'Сірий', color: 'bg-gray-400 text-white' },
+  { val: 'Коричневий', color: 'bg-amber-800 text-white' },
+];
+
 export default function Feed() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState(false);
   const [listingTypeFilter, setListingTypeFilter] = useState<ListingFilter>('all');
   const [petTypeFilter, setPetTypeFilter] = useState<PetFilter>('all');
+  const [colorFilter, setColorFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchListings = () => {
@@ -43,6 +52,7 @@ export default function Feed() {
     if (l.status === 'ARCHIVED') return false;
     if (listingTypeFilter !== 'all' && l.type !== listingTypeFilter) return false;
     if (petTypeFilter !== 'all' && l.petType !== petTypeFilter) return false;
+    if (colorFilter !== 'all' && !l.color?.includes(colorFilter)) return false;
 
     const q = normalizeText(searchQuery);
     if (!q) return true;
@@ -62,6 +72,7 @@ export default function Feed() {
   const resetFilters = () => {
     setListingTypeFilter('all');
     setPetTypeFilter('all');
+    setColorFilter('all');
     setSearchQuery('');
   };
 
@@ -93,41 +104,59 @@ export default function Feed() {
         </header>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
-          {FILTER_TABS.map(({ val, label, kind }) => {
-            const isActive =
-              val === 'all'
-                ? listingTypeFilter === 'all' && petTypeFilter === 'all'
-                : kind === 'pet'
-                  ? petTypeFilter === val
-                  : listingTypeFilter === val;
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            {FILTER_TABS.map(({ val, label, kind }) => {
+              const isActive =
+                val === 'all'
+                  ? listingTypeFilter === 'all' && petTypeFilter === 'all' && colorFilter === 'all'
+                  : kind === 'pet'
+                    ? petTypeFilter === val
+                    : listingTypeFilter === val;
 
-            return (
+              return (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => {
+                    if (val === 'all') { resetFilters(); return; }
+                    if (kind === 'pet') { setPetTypeFilter(val as PetFilter); return; }
+                    setListingTypeFilter(val as ListingFilter);
+                  }}
+                  className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'bg-text-dark text-white shadow-md'
+                      : 'bg-white text-text-dark border border-gray-100 hover:bg-gray-50'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+
+            <Link
+              to="/search"
+              className="ml-auto px-5 py-2 rounded-full text-sm font-bold text-text-muted bg-white border border-gray-100 hover:bg-gray-50 transition-all whitespace-nowrap"
+            >
+              Розширений пошук →
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted mr-2">Колір:</span>
+            {COLOR_FILTERS.map((f) => (
               <button
-                key={val}
-                type="button"
-                onClick={() => {
-                  if (val === 'all') { resetFilters(); return; }
-                  if (kind === 'pet') { setPetTypeFilter(val as PetFilter); return; }
-                  setListingTypeFilter(val as ListingFilter);
-                }}
-                className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-text-dark text-white shadow-md'
-                    : 'bg-white text-text-dark border border-gray-100 hover:bg-gray-50'
-                }`}
+                key={f.val}
+                onClick={() => setColorFilter(colorFilter === f.val ? 'all' : f.val)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border flex items-center gap-2 ${
+                  colorFilter === f.val ? 'ring-2 ring-primary border-primary' : 'border-transparent'
+                } ${f.color}`}
               >
-                {label}
+                <div className={`w-2 h-2 rounded-full border border-black/10 ${f.val === 'Білий' ? 'bg-white' : f.val === 'Чорний' ? 'bg-black' : f.val === 'Рудий' ? 'bg-orange-500' : f.val === 'Сірий' ? 'bg-gray-500' : 'bg-amber-900'}`} />
+                {f.val}
               </button>
-            );
-          })}
-
-          <Link
-            to="/search"
-            className="ml-auto px-5 py-2 rounded-full text-sm font-bold text-text-muted bg-white border border-gray-100 hover:bg-gray-50 transition-all whitespace-nowrap"
-          >
-            Розширений пошук →
-          </Link>
+            ))}
+          </div>
         </div>
 
         {/* API Error */}

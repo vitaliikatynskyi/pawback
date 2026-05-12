@@ -8,21 +8,57 @@ import {
   PET_TYPE_IMAGES,
   PET_TYPE_LABELS,
   type Listing,
-  type PetType,
 } from '../types';
 import { distanceKm, formatUkrDate, normalizeText } from '../lib/appUtils';
+import { getImageEmbedding } from '../lib/clip';
 
 const COLORS = ['Будь-який', 'Сірий', 'Чорний', 'Білий', 'Рудий', 'Триколір'];
-const SORTS = ['Нові', 'Поруч зі мною', 'Популярні', 'З винагородою'] as const;
+const SORTS = ['Нові', 'Поруч зі мною', 'Популярні', 'З винагородою', 'За схожістю'] as const;
 type SortOption = (typeof SORTS)[number];
 
-function parsePhotoHint(fileName: string): { petType?: PetType; query: string } {
-  const baseName = fileName.toLowerCase().replace(/\.[^.]+$/, '');
-  const normalized = baseName.replace(/[_-]+/g, ' ').trim();
+const PET_CAT = ['cat', 'tabby', 'persian', 'siamese', 'egyptian cat', 'kitten'];
+const PET_DOG = ['dog', 'retriever', 'terrier', 'spaniel', 'puppy', 'hound', 'poodle'];
 
-  if (/(cat|kit|кіт|кот)/i.test(baseName)) return { petType: 'CAT', query: normalized };
-  if (/(dog|pes|пес|собак)/i.test(baseName)) return { petType: 'DOG', query: normalized };
-  return { query: normalized };
+async function detectPetType(file: File): Promise<string | null> {
+  try {
+    await import('@tensorflow/tfjs');
+    const mobilenet = await import('@tensorflow-models/mobilenet');
+    const model = await mobilenet.load();
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    await new Promise<void>(r => { img.onload = () => r(); });
+    type Pred = { className: string; probability: number };
+    const preds = await model.classify(img) as Pred[];
+    URL.revokeObjectURL(img.src);
+    for (const p of preds) {
+      const c = p.className.toLowerCase();
+      if (PET_CAT.some(k => c.includes(k))) return 'CAT';
+      if (PET_DOG.some(k => c.includes(k))) return 'DOG';
+    }
+    return null;
+  } catch { return null; }
+}
+
+const indexed = new Set<string>();
+
+async function indexUnindexedListings(listings: Listing[]) {
+  const toIndex = listings.filter(l => l.imageUrls?.length && !indexed.has(l.id));
+  await Promise.all(
+    toIndex.map(async listing => {
+      const url = listing.imageUrls![0];
+      indexed.add(listing.id);
+      try {
+        const res = await fetch(url, { credentials: 'omit' });
+        if (!res.ok) throw new Error();
+        const blob = await res.blob();
+        const file = new File([blob], 'img.jpg', { type: blob.type });
+        const embedding = await getImageEmbedding(file);
+        await listingsApi.saveEmbedding(listing.id, embedding);
+      } catch {
+        indexed.delete(listing.id);
+      }
+    })
+  );
 }
 
 export default function Search() {
@@ -36,7 +72,9 @@ export default function Search() {
   const [allListings, setAllListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [photoFileName, setPhotoFileName] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingStatus, setAnalyzingStatus] = useState('');
+  const [similarListings, setSimilarListings] = useState<Listing[] | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
 
@@ -78,7 +116,7 @@ export default function Search() {
   }, [city, petType, type]);
 
   const listings = useMemo(() => {
-    let data = [...allListings];
+    let data = [...(similarListings ?? allListings)];
 
     const searchTerm = normalizeText(query);
     if (searchTerm) {
@@ -133,6 +171,8 @@ export default function Search() {
           .filter(listing => Boolean(listing.rewardAmount))
           .sort((a, b) => Number(b.rewardAmount || 0) - Number(a.rewardAmount || 0));
         break;
+      case 'За схожістю':
+        break; // backend returns pre-sorted results
       case 'Нові':
       default:
         data = [...data].sort(
@@ -142,7 +182,7 @@ export default function Search() {
     }
 
     return data;
-  }, [allListings, color, query, radius, sort, userLocation]);
+  }, [allListings, similarListings, color, query, radius, sort, userLocation]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,19 +193,56 @@ export default function Search() {
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const hint = parsePhotoHint(file.name);
-    setPhotoFileName(file.name);
-    if (hint.petType) {
-      setPetType(hint.petType);
-    }
-    if (hint.query) {
-      setQuery(hint.query);
-    }
+    setAnalyzing(true);
     setShowFilters(true);
+    setSimilarListings(null);
+
+    try {
+      setAnalyzingStatus('Визначаємо тварину...');
+
+      // Step 1: detect pet type + compute embedding in parallel
+      const [detectedType, embedding] = await Promise.all([
+        detectPetType(file),
+        getImageEmbedding(file),
+      ]);
+
+      if (detectedType) setPetType(detectedType);
+
+      // Step 2: fetch base listings filtered by type + run similarity search in parallel
+      setAnalyzingStatus('Шукаємо схожих...');
+      const baseParams: Record<string, string> = {};
+      if (detectedType) baseParams.petType = detectedType;
+
+      const [baseRes, similarRes] = await Promise.all([
+        listingsApi.getAll(baseParams),
+        listingsApi.findSimilar(embedding),
+      ]);
+
+      // Step 3: merge — similarity-ranked first, then rest of same type
+      if (similarRes.data.length > 0) {
+        const similarIds = new Set(similarRes.data.map(l => l.id));
+        setSimilarListings([
+          ...similarRes.data,
+          ...baseRes.data.filter(l => !similarIds.has(l.id)),
+        ]);
+      } else {
+        setSimilarListings(baseRes.data);
+      }
+      setSort('За схожістю');
+
+      // Index listing images in background for future searches
+      indexUnindexedListings(baseRes.data);
+    } catch {
+      // fallback: normal search still visible
+    } finally {
+      setAnalyzing(false);
+      setAnalyzingStatus('');
+    }
+
     resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -177,7 +254,7 @@ export default function Search() {
     setColor('Будь-який');
     setRadius(5);
     setSort('Нові');
-    setPhotoFileName('');
+    setSimilarListings(null);
   };
 
   const activeFiltersCount = [
@@ -326,14 +403,12 @@ export default function Search() {
           <div className="space-y-2">
             <label className="text-xs font-bold text-text-muted uppercase tracking-wider">Сортування</label>
             <div className="flex flex-wrap gap-2">
-              {SORTS.map(option => (
+              {SORTS.filter(o => o !== 'За схожістю' || similarListings !== null).map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => {
-                    if (option === 'Поруч зі мною') {
-                      ensureLocation();
-                    }
+                    if (option === 'Поруч зі мною') ensureLocation();
                     setSort(option);
                   }}
                   className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
@@ -350,15 +425,22 @@ export default function Search() {
         </div>
       )}
 
-      {/* Photo Hint Search */}
+      {/* AI Photo Search */}
       <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-3xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h3 className="font-bold text-text-dark mb-1">Підказка за фото</h3>
+          <h3 className="font-bold text-text-dark mb-1">AI пошук за фото</h3>
           <p className="text-sm text-text-muted">
-            Оберіть фото — ми спробуємо визначити тип тварини з назви файлу і автоматично встановимо фільтр.
+            Завантажте фото тварини — AI визначить вид і автоматично встановить фільтр.
           </p>
-          {photoFileName && (
-            <p className="text-xs font-medium text-primary mt-2">Файл: {photoFileName}</p>
+          {analyzing && (
+            <p className="text-xs font-medium text-primary mt-2 animate-pulse">
+              {analyzingStatus || 'Аналізуємо...'}
+            </p>
+          )}
+          {!analyzing && similarListings !== null && (
+            <p className="text-xs font-medium text-green-600 mt-2">
+              Знайдено {similarListings.length} схожих оголошень
+            </p>
           )}
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -372,10 +454,11 @@ export default function Search() {
           <button
             type="button"
             onClick={() => photoInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 bg-primary text-white font-bold py-3 px-6 rounded-2xl shadow-md hover:bg-primary-hover transition-all"
+            disabled={analyzing}
+            className="flex items-center justify-center gap-2 bg-primary text-white font-bold py-3 px-6 rounded-2xl shadow-md hover:bg-primary-hover transition-all disabled:opacity-60"
           >
             <Upload className="w-4 h-4" />
-            Обрати фото
+            {analyzing ? 'Аналізуємо...' : 'Обрати фото'}
           </button>
         </div>
       </div>
